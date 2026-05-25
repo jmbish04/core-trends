@@ -1,30 +1,28 @@
 /**
- * @fileoverview Custom Cloudflare Workers Entrypoint pipeline
- * Blends Astro SSR, Hono API routing, and stateful Durable Objects.
+ * @fileoverview Custom Cloudflare Workers Entrypoint wrapper
+ * Merges Astro SSR, Hono API Routing, and Exports Durable Objects cleanly.
  */
 
 import type { ExportedHandler } from '@cloudflare/workers-types';
 import { routeAgentRequest } from 'agents';
-import { createExports } from '@astrojs/cloudflare/entrypoints/server';
 import { app as honoApp } from './backend/api/index';
 import type { Bindings } from './backend/api/index';
 
-// 1. Export the Durable Object class for Wrangler runtime visibility
-export { RepositoryIntelligenceAgent } from './backend/agents/RepositoryIntelligenceAgent';
+// @ts-ignore - Dynamically import the compiled framework runtime
+import astroHandler from '../dist/_worker.js/index.js';
 
-// 2. Wrap Astro's build engine reference 
-// @ts-ignore
-const astroServer = createExports(import.meta.env.SSR_APP);
+// CRITICAL EXPORT: Fixes the Durable Object missing export validation error
+export { RepositoryIntelligenceAgent } from './backend/agents/RepositoryIntelligenceAgent';
 
 const handler: ExportedHandler<Bindings> = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Intercept WebSocket connections bound for Agents first
+    // 1. Route Agent WebSocket connections first
     const agentResponse = await routeAgentRequest(request, env);
     if (agentResponse) return agentResponse;
 
-    // Route dedicated API endpoints and OpenAPI/Swagger reference systems to Hono
+    // 2. Direct API routes and Documentation servers directly to the Hono engine
     if (
       url.pathname.startsWith('/api/') ||
       url.pathname === '/openapi.json' ||
@@ -35,8 +33,8 @@ const handler: ExportedHandler<Bindings> = {
       return honoApp.fetch(request, env, ctx);
     }
 
-    // Default back to Astro's server-side rendering layer for UI pages
-    return astroServer.fetch(request, env, ctx);
+    // 3. Forward UI page traffic to Astro's server-side renderer
+    return astroHandler.fetch(request, env, ctx);
   },
 };
 
