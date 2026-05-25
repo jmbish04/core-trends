@@ -30,6 +30,20 @@
   "ai": {
     "binding": "AI",
   },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "REPO_INTEL_AGENT",
+        "class_name": "RepositoryIntelligenceAgent",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1_repo_intel_agent",
+      "new_sqlite_classes": ["RepositoryIntelligenceAgent"],
+    },
+  ],
   "d1_databases": [
     {
       "binding": "DB",

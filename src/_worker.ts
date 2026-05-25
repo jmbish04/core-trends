@@ -1,16 +1,24 @@
 /**
  * @fileoverview Cloudflare Workers entry point
  *
- * This file integrates the Hono API with Astro SSR.
+ * This file integrates the Hono API with Astro SSR and routes Agent requests.
  */
 
 import type { ExportedHandler } from '@cloudflare/workers-types';
+import { routeAgentRequest } from 'agents';
 import { app as honoApp } from './backend/api/index';
 import type { Bindings } from './backend/api/index';
+
+// Export the Repository Intelligence Agent for Durable Objects
+export { RepositoryIntelligenceAgent } from './backend/agents/RepositoryIntelligenceAgent';
 
 const handler: ExportedHandler<Bindings> = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    // Route agent WebSocket connections first
+    const agentResponse = await routeAgentRequest(request, env);
+    if (agentResponse) return agentResponse;
 
     // Handle API routes with Hono
     if (url.pathname.startsWith('/api/') ||
