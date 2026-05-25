@@ -1,0 +1,21 @@
+# GitHub OAuth Configuration
+# Create a GitHub OAuth App at https://github.com/settings/developers
+# Set the callback URL to: https://your-worker.workers.dev/api/auth/callback
+GITHUB_CLIENT_ID=your_github_client_id_here
+GITHUB_CLIENT_SECRET=your_github_client_secret_here
+
+# GitHub Webhook Secret
+# This should match the secret you configure in your GitHub webhook settings
+# Generate a strong random secret: openssl rand -hex 32
+GITHUB_WEBHOOK_SECRET=your_webhook_secret_here
+
+# Cloudflare Account Configuration
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
+CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
+
+# AI Gateway (optional)
+AI_GATEWAY_TOKEN=your_ai_gateway_token_here
+
+# Session Secret (for cookie signing)
+# Generate: openssl rand -base64 32
+SESSION_SECRET=your_session_secret_here

@@ -4,15 +4,92 @@
 
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
-import { desc, eq, and, gte } from 'drizzle-orm';
-import { dashboardMetrics } from '../../db/schema';
+import { desc, eq, and, gte, sql } from 'drizzle-orm';
+import { dashboardMetrics, repositories, evaluations, systemLogs } from '../../db/schema';
 import { authMiddleware } from '../middleware/auth';
 import type { Bindings, Variables } from '../index';
 
 const dashboardRouter = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
-// Apply auth middleware to all routes
-dashboardRouter.use('*', authMiddleware);
+// Apply auth middleware to protected routes
+dashboardRouter.use('/metrics', authMiddleware);
+dashboardRouter.use('/charts/*', authMiddleware);
+
+// GET /api/dashboard/summary - Public endpoint for repository intelligence overview
+dashboardRouter.get('/summary', async (c) => {
+  const db = drizzle(c.env.DB);
+
+  try {
+    // Get repository statistics in a single optimized query
+    const repoStats = await db
+      .select({
+        totalCount: sql<number>`count(*)`,
+        trendingCount: sql<number>`sum(case when ${repositories.isNewTrending} = 1 then 1 else 0 end)`,
+        starredCount: sql<number>`sum(case when ${repositories.isStarredByUser} = 1 then 1 else 0 end)`,
+      })
+      .from(repositories)
+      .get();
+
+    // Get top repositories by stars
+    const topRepositories = await db
+      .select()
+      .from(repositories)
+      .orderBy(desc(repositories.stars))
+      .limit(10)
+      .all();
+
+    // Get evaluation statistics
+    const totalEvaluations = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(evaluations)
+      .get();
+
+    const avgScore = await db
+      .select({ avg: sql<number>`avg(score)` })
+      .from(evaluations)
+      .get();
+
+    // Get recent activity
+    const recentLogs = await db
+      .select()
+      .from(systemLogs)
+      .where(eq(systemLogs.subsystem, 'agent_evaluator'))
+      .orderBy(desc(systemLogs.createdAt))
+      .limit(5)
+      .all();
+
+    // Get language distribution
+    const languageStats = await db
+      .select({
+        language: repositories.language,
+        count: sql<number>`count(*)`,
+        totalStars: sql<number>`sum(${repositories.stars})`,
+      })
+      .from(repositories)
+      .groupBy(repositories.language)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10)
+      .all();
+
+    return c.json({
+      success: true,
+      statistics: {
+        totalRepositories: repoStats?.totalCount || 0,
+        trendingRepositories: repoStats?.trendingCount || 0,
+        starredRepositories: repoStats?.starredCount || 0,
+        totalEvaluations: totalEvaluations?.count || 0,
+        averageScore: avgScore?.avg ? Math.round(avgScore.avg * 10) / 10 : 0,
+      },
+      topRepositories,
+      languageDistribution: languageStats,
+      recentActivity: recentLogs,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard summary:', error);
+    return c.json({ success: false, error: 'Failed to fetch summary' }, 500);
+  }
+});
 
 // GET /api/dashboard/metrics
 dashboardRouter.get('/metrics', async (c) => {
@@ -48,35 +125,6 @@ dashboardRouter.get('/metrics', async (c) => {
   } catch (error) {
     console.error('Error fetching dashboard metrics:', error);
     return c.json({ error: 'Failed to fetch metrics' }, 500);
-  }
-});
-
-// GET /api/dashboard/summary
-dashboardRouter.get('/summary', async (c) => {
-  const db = drizzle(c.env.DB);
-
-  try {
-    // Get latest metrics for each category
-    const allMetrics = await db
-      .select()
-      .from(dashboardMetrics)
-      .orderBy(desc(dashboardMetrics.timestamp))
-      .limit(1000);
-
-    // Get the most recent metric for each metric name
-    const latestMetrics = allMetrics.reduce((acc, metric) => {
-      if (!acc[metric.metricName] || new Date(metric.timestamp) > new Date(acc[metric.metricName].timestamp)) {
-        acc[metric.metricName] = metric;
-      }
-      return acc;
-    }, {} as Record<string, typeof allMetrics[0]>);
-
-    return c.json({
-      summary: Object.values(latestMetrics),
-    });
-  } catch (error) {
-    console.error('Error fetching dashboard summary:', error);
-    return c.json({ error: 'Failed to fetch summary' }, 500);
   }
 });
 

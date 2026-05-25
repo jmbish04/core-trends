@@ -134,3 +134,104 @@ export const documents = sqliteTable("documents", {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+/**
+ * Repositories table for tracked GitHub repositories
+ */
+export const repositories = sqliteTable("repositories", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  githubId: integer("github_id").notNull().unique(),
+  name: text("name").notNull(),
+  owner: text("owner").notNull(),
+  fullName: text("full_name").notNull(),
+  description: text("description"),
+  url: text("url").notNull(),
+  language: text("language").notNull(),
+  stars: integer("stars").notNull(),
+  trendPeriod: text("trend_period").notNull(), // 'daily' | 'weekly' | 'monthly' | 'yearly'
+  isNewTrending: integer("is_new_trending", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  isStarredByUser: integer("is_starred_by_user", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  discoveredMethod: text("discovered_method").notNull(), // 'pipeline_trending' | 'agent_search' | 'webhook_signal'
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+/**
+ * User goals for repository discovery
+ */
+export const goals = sqliteTable("goals", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  targetKeywords: text("target_keywords", { mode: "json" }).$type<string[]>().notNull(),
+  targetLanguages: text("target_languages", { mode: "json" }).$type<string[]>().notNull(),
+  isActive: integer("is_active", { mode: "boolean" })
+    .notNull()
+    .default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+/**
+ * Repository evaluations from AI agent
+ */
+export const evaluations = sqliteTable("evaluations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  repositoryId: integer("repository_id")
+    .notNull()
+    .references(() => repositories.id, { onDelete: "cascade" }),
+  score: integer("score").notNull(), // Range 1 to 10
+  rationale: text("rationale").notNull(),
+  compatibilityFlags: text("compatibility_flags"), // JSON object
+  isAbandonedProject: integer("is_abandoned_project", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  surveyResponse: text("survey_response"), // User feedback on evaluation
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+/**
+ * Projects generated from repositories
+ */
+export const projects = sqliteTable("projects", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  generatedRepoUrl: text("generated_repo_url"),
+  contextData: text("context_data"), // JSON object with metadata
+  status: text("status").notNull().default("initiated"), // 'initiated' | 'scaffolded' | 'active'
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+/**
+ * System logs for monitoring
+ */
+export const systemLogs = sqliteTable("system_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  level: text("level").notNull(), // 'info' | 'warn' | 'error'
+  subsystem: text("subsystem").notNull(), // 'webhook_listener' | 'agent_evaluator' | 'frontend'
+  message: text("message").notNull(),
+  metadata: text("metadata"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});

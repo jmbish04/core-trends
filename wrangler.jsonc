@@ -1,6 +1,6 @@
 {
   "name": "core-trends",
-  "main": "dist/_worker.js/index.js",
+  "main": "dist/index.js",
   "compatibility_date": "2026-03-09",
   "compatibility_flags": ["nodejs_compat"],
   "upload_source_maps": true,
@@ -30,6 +30,20 @@
   "ai": {
     "binding": "AI",
   },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "REPO_INTEL_AGENT",
+        "class_name": "RepositoryIntelligenceAgent",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1_repo_intel_agent",
+      "new_sqlite_classes": ["RepositoryIntelligenceAgent"],
+    },
+  ],
   "d1_databases": [
     {
       "binding": "DB",
