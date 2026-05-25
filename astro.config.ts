@@ -18,6 +18,11 @@ export default defineConfig({
     platformProxy: {
       enabled: true,
     },
+    // Natively injects your custom script and exposes your DO class
+    workerEntryPoint: {
+      path: "./src/index.ts",
+      namedExports: ["RepositoryIntelligenceAgent"],
+    },
   }),
   integrations: [react()],
   vite: {
