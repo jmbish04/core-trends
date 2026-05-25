@@ -20,22 +20,14 @@ dashboardRouter.get('/summary', async (c) => {
   const db = drizzle(c.env.DB);
 
   try {
-    // Get repository statistics
-    const totalRepos = await db
-      .select({ count: sql<number>`count(*)` })
+    // Get repository statistics in a single optimized query
+    const repoStats = await db
+      .select({
+        totalCount: sql<number>`count(*)`,
+        trendingCount: sql<number>`sum(case when ${repositories.isNewTrending} = 1 then 1 else 0 end)`,
+        starredCount: sql<number>`sum(case when ${repositories.isStarredByUser} = 1 then 1 else 0 end)`,
+      })
       .from(repositories)
-      .get();
-
-    const trendingRepos = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(repositories)
-      .where(eq(repositories.isNewTrending, true))
-      .get();
-
-    const starredRepos = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(repositories)
-      .where(eq(repositories.isStarredByUser, true))
       .get();
 
     // Get top repositories by stars
@@ -82,9 +74,9 @@ dashboardRouter.get('/summary', async (c) => {
     return c.json({
       success: true,
       statistics: {
-        totalRepositories: totalRepos?.count || 0,
-        trendingRepositories: trendingRepos?.count || 0,
-        starredRepositories: starredRepos?.count || 0,
+        totalRepositories: repoStats?.totalCount || 0,
+        trendingRepositories: repoStats?.trendingCount || 0,
+        starredRepositories: repoStats?.starredCount || 0,
         totalEvaluations: totalEvaluations?.count || 0,
         averageScore: avgScore?.avg ? Math.round(avgScore.avg * 10) / 10 : 0,
       },

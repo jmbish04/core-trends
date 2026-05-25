@@ -1,0 +1,431 @@
+---
+title: 'GitHub OAuth & Webhook Setup'
+layout: '../../layouts/MainLayout.astro'
+---
+
+<script>
+  // Track completed steps in localStorage
+  function toggleStep(stepId: string) {
+    const step = document.getElementById(stepId);
+    if (!step) return;
+
+    const isCompleted = step.classList.contains('completed');
+    if (isCompleted) {
+      step.classList.remove('completed');
+      localStorage.removeItem(`setup-step-${stepId}`);
+    } else {
+      step.classList.add('completed');
+      localStorage.setItem(`setup-step-${stepId}`, 'true');
+    }
+  }
+
+  // Load completed steps on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    const steps = document.querySelectorAll('[data-step-id]');
+    steps.forEach((step) => {
+      const stepId = step.getAttribute('data-step-id');
+      if (stepId && localStorage.getItem(`setup-step-${stepId}`)) {
+        step.classList.add('completed');
+      }
+    });
+  });
+</script>
+
+<style>
+  .setup-step {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .setup-step.completed {
+    background: #f0fdf4;
+    border-color: #86efac;
+    max-height: 4rem;
+    overflow: hidden;
+  }
+
+  .setup-step.completed .step-content {
+    display: none;
+  }
+
+  .step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .setup-step.completed .step-header {
+    margin-bottom: 0;
+  }
+
+  .step-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+  }
+
+  .complete-btn {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+  }
+
+  .complete-btn:hover {
+    background: #059669;
+  }
+
+  .setup-step.completed .complete-btn {
+    background: #6b7280;
+  }
+
+  .code-block {
+    background: #1f2937;
+    color: #f3f4f6;
+    padding: 1rem;
+    border-radius: 6px;
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.875rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+
+  .warning-box {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+  }
+
+  .info-box {
+    background: #dbeafe;
+    border-left: 4px solid #3b82f6;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+  }
+
+  .setup-navigation {
+    position: sticky;
+    top: 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .nav-link {
+    display: block;
+    padding: 0.5rem;
+    color: #4b5563;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  .nav-link:hover {
+    background: #f3f4f6;
+  }
+
+  .nav-link.completed::before {
+    content: '✓ ';
+    color: #10b981;
+    font-weight: bold;
+  }
+</style>
+
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-3">
+      <h1 class="text-4xl font-bold mb-4">GitHub OAuth & Webhook Setup</h1>
+      <p class="text-lg text-gray-600 mb-8">
+        Complete setup guide for integrating GitHub OAuth and webhooks with your Repository Intelligence Engine
+      </p>
+
+      <!-- Step 1: GitHub OAuth App -->
+      <div class="setup-step" data-step-id="step1" id="step1">
+        <div class="step-header">
+          <h2 class="step-title">1. Create GitHub OAuth Application</h2>
+          <button class="complete-btn" onclick="toggleStep('step1')">Mark Complete</button>
+        </div>
+        <div class="step-content">
+          <p class="mb-4">First, you need to create a GitHub OAuth App to enable authentication.</p>
+
+          <ol class="list-decimal ml-6 space-y-3">
+            <li>Go to <a href="https://github.com/settings/developers" target="_blank" class="text-blue-600 hover:underline">GitHub Settings → Developer Settings</a></li>
+            <li>Click <strong>"OAuth Apps"</strong> → <strong>"New OAuth App"</strong></li>
+            <li>Fill in the application details:
+              <div class="code-block">
+Application name: Repository Intelligence Engine
+Homepage URL: https://your-worker.workers.dev
+Authorization callback URL: https://your-worker.workers.dev/api/auth/callback
+              </div>
+            </li>
+            <li>Click <strong>"Register application"</strong></li>
+            <li>Copy the <strong>Client ID</strong></li>
+            <li>Click <strong>"Generate a new client secret"</strong> and copy it</li>
+          </ol>
+
+          <div class="warning-box">
+            <strong>⚠️ Important:</strong> Keep your Client Secret secure! Never commit it to version control.
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Configure Local Environment -->
+      <div class="setup-step" data-step-id="step2" id="step2">
+        <div class="step-header">
+          <h2 class="step-title">2. Configure Local Environment Variables</h2>
+          <button class="complete-btn" onclick="toggleStep('step2')">Mark Complete</button>
+        </div>
+        <div class="step-content">
+          <p class="mb-4">Set up your local development environment with the necessary secrets.</p>
+
+          <ol class="list-decimal ml-6 space-y-3">
+            <li>Copy the example file:
+              <div class="code-block">cp .dev.vars.example .dev.vars</div>
+            </li>
+            <li>Edit <code>.dev.vars</code> and add your GitHub OAuth credentials:
+              <div class="code-block">
+GITHUB_CLIENT_ID=your_client_id_here
+GITHUB_CLIENT_SECRET=your_client_secret_here
+
+# Generate a strong webhook secret
+GITHUB_WEBHOOK_SECRET=$(openssl rand -hex 32)
+
+# Add Cloudflare configuration
+CLOUDFLARE_ACCOUNT_ID=your_account_id
+CLOUDFLARE_API_TOKEN=your_api_token
+              </div>
+            </li>
+            <li>Generate a webhook secret:
+              <div class="code-block">openssl rand -hex 32</div>
+              Copy the output and add it as <code>GITHUB_WEBHOOK_SECRET</code>
+            </li>
+          </ol>
+
+          <div class="info-box">
+            <strong>ℹ️ Note:</strong> The <code>.dev.vars</code> file is git-ignored and should never be committed.
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Upload Secrets to Cloudflare -->
+      <div class="setup-step" data-step-id="step3" id="step3">
+        <div class="step-header">
+          <h2 class="step-title">3. Upload Secrets to Cloudflare Workers</h2>
+          <button class="complete-btn" onclick="toggleStep('step3')">Mark Complete</button>
+        </div>
+        <div class="step-content">
+          <p class="mb-4">Deploy your secrets to Cloudflare's Secrets Store for production use.</p>
+
+          <ol class="list-decimal ml-6 space-y-3">
+            <li>Ensure you're logged in to Wrangler:
+              <div class="code-block">npx wrangler login</div>
+            </li>
+            <li>Upload all secrets at once using the bulk upload script:
+              <div class="code-block">pnpm run set:secrets:bulk</div>
+              This command runs <code>wrangler secret bulk .dev.vars</code>
+            </li>
+            <li>Verify secrets were uploaded:
+              <div class="code-block">npx wrangler secret list</div>
+            </li>
+          </ol>
+
+          <div class="warning-box">
+            <strong>⚠️ Security Note:</strong> The WORKER_API_KEY secret is used to verify GitHub webhook signatures. Make sure it matches your webhook configuration.
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Configure GitHub Webhook -->
+      <div class="setup-step" data-step-id="step4" id="step4">
+        <div class="step-header">
+          <h2 class="step-title">4. Set Up GitHub Webhook</h2>
+          <button class="complete-btn" onclick="toggleStep('step4')">Mark Complete</button>
+        </div>
+        <div class="step-content">
+          <p class="mb-4">Configure GitHub to send webhook events to your Worker.</p>
+
+          <ol class="list-decimal ml-6 space-y-3">
+            <li>Go to your target GitHub repository's settings</li>
+            <li>Navigate to <strong>Settings → Webhooks → Add webhook</strong></li>
+            <li>Configure the webhook:
+              <div class="code-block">
+Payload URL: https://your-worker.workers.dev/api/webhooks/github
+Content type: application/json
+Secret: (paste your GITHUB_WEBHOOK_SECRET)
+              </div>
+            </li>
+            <li>Select which events to send:
+              <ul class="list-disc ml-6 mt-2">
+                <li>Check <strong>"Let me select individual events"</strong></li>
+                <li>Select <strong>"Stars"</strong></li>
+                <li>Uncheck everything else (unless you want other events)</li>
+              </ul>
+            </li>
+            <li>Ensure <strong>"Active"</strong> is checked</li>
+            <li>Click <strong>"Add webhook"</strong></li>
+          </ol>
+
+          <div class="info-box">
+            <strong>ℹ️ Webhook Signature Verification:</strong> Our endpoint automatically verifies the <code>x-hub-signature-256</code> header using the WORKER_API_KEY secret to ensure authenticity.
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5: Deploy to Cloudflare -->
+      <div class="setup-step" data-step-id="step5" id="step5">
+        <div class="step-header">
+          <h2 class="step-title">5. Deploy Your Worker</h2>
+          <button class="complete-btn" onclick="toggleStep('step5')">Mark Complete</button>
+        </div>
+        <div class="step-content">
+          <p class="mb-4">Deploy your application to Cloudflare Workers.</p>
+
+          <ol class="list-decimal ml-6 space-y-3">
+            <li>Build and deploy using the deploy script:
+              <div class="code-block">pnpm run deploy</div>
+              This will:
+              <ul class="list-disc ml-6 mt-2">
+                <li>Build the Astro frontend</li>
+                <li>Copy assets configuration</li>
+                <li>Run database migrations</li>
+                <li>Deploy to Cloudflare Workers</li>
+              </ul>
+            </li>
+            <li>After deployment, you'll see your Worker URL:
+              <div class="code-block">
+✨ Deployed to https://your-worker.workers.dev
+              </div>
+            </li>
+            <li>Update your GitHub OAuth app callback URL with the actual Worker URL</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Step 6: Test the Integration -->
+      <div class="setup-step" data-step-id="step6" id="step6">
+        <div class="step-header">
+          <h2 class="step-title">6. Test the Integration</h2>
+          <button class="complete-btn" onclick="toggleStep('step6')">Mark Complete</button>
+        </div>
+        <div class="step-content">
+          <p class="mb-4">Verify that everything is working correctly.</p>
+
+          <h3 class="font-semibold mb-2">Test Webhook:</h3>
+          <ol class="list-decimal ml-6 space-y-2 mb-4">
+            <li>Go to your GitHub repository webhook settings</li>
+            <li>Click on your webhook</li>
+            <li>Scroll to <strong>"Recent Deliveries"</strong></li>
+            <li>Click <strong>"Redeliver"</strong> on a test event</li>
+            <li>Check that the response is <code>200 OK</code></li>
+          </ol>
+
+          <h3 class="font-semibold mb-2">Test OAuth:</h3>
+          <ol class="list-decimal ml-6 space-y-2">
+            <li>Visit <code>https://your-worker.workers.dev/api/auth/login</code></li>
+            <li>You should be redirected to GitHub for authorization</li>
+            <li>After authorizing, you should be redirected back to your app</li>
+          </ol>
+
+          <h3 class="font-semibold mb-2 mt-4">Verify Webhook Security:</h3>
+          <p class="mb-2">Test that signature verification is working:</p>
+          <div class="code-block">
+curl -X POST https://your-worker.workers.dev/api/webhooks/github \\
+  -H "Content-Type: application/json" \\
+  -d '{"test": "data"}'
+
+# Should return: {"success":false,"error":"Invalid webhook signature"}
+          </div>
+        </div>
+      </div>
+
+      <!-- Troubleshooting -->
+      <div class="mt-8 p-6 bg-gray-50 rounded-lg">
+        <h2 class="text-2xl font-bold mb-4">Troubleshooting</h2>
+
+        <div class="space-y-4">
+          <div>
+            <h3 class="font-semibold text-lg">Webhook signature verification fails</h3>
+            <p class="text-gray-700">Ensure your WORKER_API_KEY secret matches the secret configured in GitHub webhook settings.</p>
+          </div>
+
+          <div>
+            <h3 class="font-semibold text-lg">OAuth callback fails</h3>
+            <p class="text-gray-700">Double-check that the callback URL in your GitHub OAuth app matches your Worker URL exactly.</p>
+          </div>
+
+          <div>
+            <h3 class="font-semibold text-lg">Secrets not found in Worker</h3>
+            <p class="text-gray-700">Run <code>npx wrangler secret list</code> to verify secrets were uploaded. Re-run <code>pnpm run set:secrets:bulk</code> if needed.</p>
+          </div>
+
+          <div>
+            <h3 class="font-semibold text-lg">Database migrations fail</h3>
+            <p class="text-gray-700">Ensure your D1 database is created and the database_id in wrangler.jsonc is correct.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <div class="lg:col-span-1">
+      <div class="setup-navigation">
+        <h3 class="font-bold mb-4">Setup Progress</h3>
+        <nav class="space-y-2">
+          <a href="#step1" class="nav-link" data-nav="step1">1. GitHub OAuth App</a>
+          <a href="#step2" class="nav-link" data-nav="step2">2. Local Environment</a>
+          <a href="#step3" class="nav-link" data-nav="step3">3. Upload Secrets</a>
+          <a href="#step4" class="nav-link" data-nav="step4">4. GitHub Webhook</a>
+          <a href="#step5" class="nav-link" data-nav="step5">5. Deploy Worker</a>
+          <a href="#step6" class="nav-link" data-nav="step6">6. Test Integration</a>
+        </nav>
+
+        <div class="mt-6 pt-6 border-t border-gray-200">
+          <button
+            onclick="if(confirm('Reset all progress?')) { localStorage.clear(); location.reload(); }"
+            class="text-sm text-red-600 hover:text-red-700"
+          >
+            Reset Progress
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Update sidebar navigation
+  function updateNavigation() {
+    const navLinks = document.querySelectorAll('[data-nav]');
+    navLinks.forEach((link) => {
+      const stepId = link.getAttribute('data-nav');
+      if (stepId && localStorage.getItem(`setup-step-${stepId}`)) {
+        link.classList.add('completed');
+      } else {
+        link.classList.remove('completed');
+      }
+    });
+  }
+
+  // Update navigation on page load and when steps are toggled
+  document.addEventListener('DOMContentLoaded', updateNavigation);
+
+  // Override toggle function to update navigation
+  const originalToggle = window.toggleStep;
+  window.toggleStep = function(stepId) {
+    originalToggle(stepId);
+    updateNavigation();
+  };
+</script>

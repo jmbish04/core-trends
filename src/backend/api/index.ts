@@ -23,6 +23,7 @@ export type Bindings = {
   DB: D1Database;
   AI: Ai;
   REPO_INTEL_AGENT: DurableObjectNamespace;
+  WORKER_API_KEY: string;
   AI_GATEWAY_TOKEN?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
   ASSETS: Fetcher;

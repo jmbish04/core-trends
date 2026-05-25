@@ -9,10 +9,25 @@ import { drizzle } from 'drizzle-orm/d1';
 import { repositories, evaluations } from '../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { getAgentByName } from 'agents';
+import { z } from 'zod';
+import { zValidator } from '@hono/zod-validator';
 import type { Bindings, Variables } from '../index';
 import type { RepositoryIntelligenceAgent } from '../../agents/RepositoryIntelligenceAgent';
 
 const repositoriesRouter = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+
+// Zod schema for repository creation
+const createRepositorySchema = z.object({
+  githubId: z.number().int().positive(),
+  name: z.string().min(1).max(255),
+  owner: z.string().min(1).max(255),
+  fullName: z.string().min(1).max(255),
+  description: z.string().optional(),
+  url: z.string().url(),
+  language: z.string().optional(),
+  stars: z.number().int().min(0).optional(),
+  trendPeriod: z.string().optional(),
+});
 
 /**
  * GET /api/repositories
@@ -44,7 +59,12 @@ repositoriesRouter.get('/', async (c) => {
  */
 repositoriesRouter.get('/:id', async (c) => {
   const db = drizzle(c.env.DB);
-  const id = parseInt(c.req.param('id'));
+  const idParam = c.req.param('id');
+  const id = parseInt(idParam);
+
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Invalid repository ID' }, 400);
+  }
 
   try {
     const repo = await db
@@ -80,7 +100,12 @@ repositoriesRouter.get('/:id', async (c) => {
  */
 repositoriesRouter.post('/:id/evaluate', async (c) => {
   const db = drizzle(c.env.DB);
-  const id = parseInt(c.req.param('id'));
+  const idParam = c.req.param('id');
+  const id = parseInt(idParam);
+
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Invalid repository ID' }, 400);
+  }
 
   try {
     const repo = await db
@@ -123,12 +148,11 @@ repositoriesRouter.post('/:id/evaluate', async (c) => {
  * POST /api/repositories
  * Add a new repository to track
  */
-repositoriesRouter.post('/', async (c) => {
+repositoriesRouter.post('/', zValidator('json', createRepositorySchema), async (c) => {
   const db = drizzle(c.env.DB);
+  const body = c.req.valid('json');
 
   try {
-    const body = await c.req.json();
-
     const result = await db
       .insert(repositories)
       .values({
@@ -158,7 +182,12 @@ repositoriesRouter.post('/', async (c) => {
  */
 repositoriesRouter.post('/:id/survey', async (c) => {
   const db = drizzle(c.env.DB);
-  const id = parseInt(c.req.param('id'));
+  const idParam = c.req.param('id');
+  const id = parseInt(idParam);
+
+  if (isNaN(id)) {
+    return c.json({ success: false, error: 'Invalid repository ID' }, 400);
+  }
 
   try {
     const { evaluationId, responseText } = await c.req.json();
