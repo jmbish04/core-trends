@@ -145,14 +145,12 @@ layout: '../../layouts/MainLayout.astro'
 
 <div class="container mx-auto px-4 py-8 max-w-7xl">
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-    <!-- Main Content -->
     <div class="lg:col-span-3">
       <h1 class="text-4xl font-bold mb-4">GitHub OAuth & Webhook Setup</h1>
       <p class="text-lg text-gray-600 mb-8">
         Complete setup guide for integrating GitHub OAuth and webhooks with your Repository Intelligence Engine
       </p>
 
-      <!-- Step 1: GitHub OAuth App -->
       <div class="setup-step" data-step-id="step1" id="step1">
         <div class="step-header">
           <h2 class="step-title">1. Create GitHub OAuth Application</h2>
@@ -167,8 +165,8 @@ layout: '../../layouts/MainLayout.astro'
             <li>Fill in the application details:
               <div class="code-block">
 Application name: Repository Intelligence Engine
-Homepage URL: https://your-worker.workers.dev
-Authorization callback URL: https://your-worker.workers.dev/api/auth/callback
+Homepage URL: https://your-worker.hacolby.workers.dev
+Authorization callback URL: https://your-worker.hacolby.workers.dev/api/auth/callback
               </div>
             </li>
             <li>Click <strong>"Register application"</strong></li>
@@ -182,7 +180,6 @@ Authorization callback URL: https://your-worker.workers.dev/api/auth/callback
         </div>
       </div>
 
-      <!-- Step 2: Configure Local Environment -->
       <div class="setup-step" data-step-id="step2" id="step2">
         <div class="step-header">
           <h2 class="step-title">2. Configure Local Environment Variables</h2>
@@ -220,7 +217,6 @@ CLOUDFLARE_API_TOKEN=your_api_token
         </div>
       </div>
 
-      <!-- Step 3: Upload Secrets to Cloudflare -->
       <div class="setup-step" data-step-id="step3" id="step3">
         <div class="step-header">
           <h2 class="step-title">3. Upload Secrets to Cloudflare Workers</h2>
@@ -248,7 +244,6 @@ CLOUDFLARE_API_TOKEN=your_api_token
         </div>
       </div>
 
-      <!-- Step 4: Configure GitHub Webhook -->
       <div class="setup-step" data-step-id="step4" id="step4">
         <div class="step-header">
           <h2 class="step-title">4. Set Up GitHub Webhook</h2>
@@ -262,7 +257,7 @@ CLOUDFLARE_API_TOKEN=your_api_token
             <li>Navigate to <strong>Settings → Webhooks → Add webhook</strong></li>
             <li>Configure the webhook:
               <div class="code-block">
-Payload URL: https://your-worker.workers.dev/api/webhooks/github
+Payload URL: https://your-worker.hacolby.workers.dev/api/webhooks/github
 Content type: application/json
 Secret: (paste your GITHUB_WEBHOOK_SECRET)
               </div>
@@ -284,7 +279,6 @@ Secret: (paste your GITHUB_WEBHOOK_SECRET)
         </div>
       </div>
 
-      <!-- Step 5: Deploy to Cloudflare -->
       <div class="setup-step" data-step-id="step5" id="step5">
         <div class="step-header">
           <h2 class="step-title">5. Deploy Your Worker</h2>
@@ -306,7 +300,7 @@ Secret: (paste your GITHUB_WEBHOOK_SECRET)
             </li>
             <li>After deployment, you'll see your Worker URL:
               <div class="code-block">
-✨ Deployed to https://your-worker.workers.dev
+✨ Deployed to https://your-worker.hacolby.workers.dev
               </div>
             </li>
             <li>Update your GitHub OAuth app callback URL with the actual Worker URL</li>
@@ -314,7 +308,6 @@ Secret: (paste your GITHUB_WEBHOOK_SECRET)
         </div>
       </div>
 
-      <!-- Step 6: Test the Integration -->
       <div class="setup-step" data-step-id="step6" id="step6">
         <div class="step-header">
           <h2 class="step-title">6. Test the Integration</h2>
@@ -334,7 +327,7 @@ Secret: (paste your GITHUB_WEBHOOK_SECRET)
 
           <h3 class="font-semibold mb-2">Test OAuth:</h3>
           <ol class="list-decimal ml-6 space-y-2">
-            <li>Visit <code>https://your-worker.workers.dev/api/auth/login</code></li>
+            <li>Visit <code>https://your-worker.hacolby.workers.dev/api/auth/login</code></li>
             <li>You should be redirected to GitHub for authorization</li>
             <li>After authorizing, you should be redirected back to your app</li>
           </ol>
@@ -342,16 +335,15 @@ Secret: (paste your GITHUB_WEBHOOK_SECRET)
           <h3 class="font-semibold mb-2 mt-4">Verify Webhook Security:</h3>
           <p class="mb-2">Test that signature verification is working:</p>
           <div class="code-block">
-curl -X POST https://your-worker.workers.dev/api/webhooks/github \\
-  -H "Content-Type: application/json" \\
-  -d '{"test": "data"}'
+curl -X POST https://your-worker.hacolby.workers.dev/api/webhooks/github \
+  -H "Content-Type: application/json" \
+  -d '&#123;"test": "data"&#125;'
 
-# Should return: {"success":false,"error":"Invalid webhook signature"}
+# Should return: &#123;"success":false,"error":"Invalid webhook signature"&#125;
           </div>
         </div>
       </div>
 
-      <!-- Troubleshooting -->
       <div class="mt-8 p-6 bg-gray-50 rounded-lg">
         <h2 class="text-2xl font-bold mb-4">Troubleshooting</h2>
 
@@ -379,7 +371,6 @@ curl -X POST https://your-worker.workers.dev/api/webhooks/github \\
       </div>
     </div>
 
-    <!-- Sidebar Navigation -->
     <div class="lg:col-span-1">
       <div class="setup-navigation">
         <h3 class="font-bold mb-4">Setup Progress</h3>
