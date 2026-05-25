@@ -13,7 +13,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && esbuild src/index.ts --bundle --minify --sourcemap --platform=node --format=esm --outfile=dist/index.js",
+    "build": "astro build && esbuild src/_worker.ts --bundle --minify --sourcemap --platform=node --format=esm --outfile=dist/index.js --external:cloudflare:* --external:node:*",
     "preview": "wrangler dev",
     "start": "astro dev",
     "fmt": "oxfmt",
