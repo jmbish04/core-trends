@@ -174,8 +174,8 @@ export const goals = sqliteTable("goals", {
     .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  targetKeywords: text("target_keywords").notNull(), // JSON array of strings
-  targetLanguages: text("target_languages").notNull(), // JSON array of strings
+  targetKeywords: text("target_keywords", { mode: "json" }).$type<string[]>().notNull(),
+  targetLanguages: text("target_languages", { mode: "json" }).$type<string[]>().notNull(),
   isActive: integer("is_active", { mode: "boolean" })
     .notNull()
     .default(true),
