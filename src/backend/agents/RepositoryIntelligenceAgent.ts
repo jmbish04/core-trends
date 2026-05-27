@@ -82,7 +82,7 @@ Provide scores from 1-10 with clear rationale.`;
       );
 
       return new Response(responseStream, {
-        headers: { "Content-Type": "text/event-stream" },
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
       });
     } catch (error) {
       console.error("AI streaming error:", error);
