@@ -1,0 +1,11 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import RepositoriesDashboard from "@/components/RepositoriesDashboard";
+---
+
+<BaseLayout
+  title="Core Trends - Repository Intelligence"
+  description="Monitor trending GitHub repositories with AI-powered analysis"
+>
+  <RepositoriesDashboard client:load />
+</BaseLayout>

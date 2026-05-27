@@ -1,13 +1,15 @@
 /**
  * @fileoverview Authentication middleware
+ * Single-user system using WORKER_API_KEY for authentication
  */
 
 import type { Context, Next } from 'hono';
-import { drizzle } from 'drizzle-orm/d1';
-import { eq } from 'drizzle-orm';
-import { sessions, users } from '../../db/schema';
 import type { Bindings, Variables } from '../index';
 
+/**
+ * Validates request using WORKER_API_KEY from secrets store
+ * No per-user authentication - single API key for all admin operations
+ */
 export async function authMiddleware(
   c: Context<{ Bindings: Bindings; Variables: Variables }>,
   next: Next
@@ -15,42 +17,26 @@ export async function authMiddleware(
   const authHeader = c.req.header('Authorization');
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized' }, 401);
+    return c.json({ error: 'Unauthorized - Missing API key' }, 401);
   }
 
-  const token = authHeader.substring(7);
-  const db = drizzle(c.env.DB);
+  const providedKey = authHeader.substring(7);
 
   try {
-    const sessionResult = await db
-      .select({
-        userId: sessions.userId,
-        expiresAt: sessions.expiresAt,
-        email: users.email,
-        name: users.name,
-      })
-      .from(sessions)
-      .innerJoin(users, eq(sessions.userId, users.id))
-      .where(eq(sessions.token, token))
-      .limit(1);
+    // Get the WORKER_API_KEY from secrets store
+    const validApiKey = await c.env.WORKER_API_KEY.get();
 
-    if (sessionResult.length === 0) {
-      return c.json({ error: 'Invalid session' }, 401);
+    if (!validApiKey) {
+      console.error('WORKER_API_KEY not configured in secrets store');
+      return c.json({ error: 'Server authentication misconfigured' }, 500);
     }
 
-    const session = sessionResult[0];
-
-    if (session.expiresAt * 1000 < Date.now()) {
-      return c.json({ error: 'Session expired' }, 401);
+    // Compare provided key with stored key
+    if (providedKey !== validApiKey) {
+      return c.json({ error: 'Invalid API key' }, 401);
     }
 
-    c.set('userId', session.userId);
-    c.set('user', {
-      id: session.userId,
-      email: session.email,
-      name: session.name,
-    });
-
+    // Authentication successful - continue to route handler
     await next();
   } catch (error) {
     console.error('Auth middleware error:', error);
