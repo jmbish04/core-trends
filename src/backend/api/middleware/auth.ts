@@ -24,7 +24,7 @@ export async function authMiddleware(
 
   try {
     // Get the WORKER_API_KEY from secrets store
-    const validApiKey = await c.env.WORKER_API_KEY.get();
+    const validApiKey = c.env.WORKER_API_KEY;
 
     if (!validApiKey) {
       console.error('WORKER_API_KEY not configured in secrets store');
