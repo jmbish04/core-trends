@@ -11,7 +11,7 @@ import { authMiddleware } from '../middleware/auth';
 import type { Bindings, Variables } from '../index';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 
 const pipelineRouter = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -98,7 +98,7 @@ pipelineRouter.get('/runs/:id', async (c) => {
     const run = await db
       .select()
       .from(pipelineRuns)
-      .where((table) => table.id === id)
+      .where(eq(pipelineRuns.id, id))
       .get();
 
     if (!run) {

@@ -101,17 +101,6 @@ export default function RepositoriesDashboard() {
     return acc;
   }, [] as { name: string; value: number }[]);
 
-  const discoveryMethodData = repositories.reduce((acc, repo) => {
-    const method = repo.discoveredMethod;
-    const existing = acc.find((item) => item.name === method);
-    if (existing) {
-      existing.value += 1;
-    } else {
-      acc.push({ name: method, value: 1 });
-    }
-    return acc;
-  }, [] as { name: string; value: number }[]);
-
   const topRepositories = [...repositories]
     .sort((a, b) => b.stars - a.stars)
     .slice(0, 10)

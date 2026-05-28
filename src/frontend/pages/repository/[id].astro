@@ -9,5 +9,5 @@ const { id } = Astro.params;
   title="Repository Details - Core Trends"
   description="Detailed AI analysis of repository"
 >
-  <RepositoryDetailView client:load repositoryId={id} />
+  <RepositoryDetailView client:only="react" repositoryId={id} />
 </BaseLayout>

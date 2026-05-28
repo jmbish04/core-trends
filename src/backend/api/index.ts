@@ -19,15 +19,11 @@ import { webhooksRouter } from './routes/webhooks';
 import { repositoriesRouter } from './routes/repositories';
 import { pipelineRouter } from './routes/pipeline';
 
-export interface WorkerAPIKeyBinding {
-  get(): Promise<string>;
-}
-
 export type Bindings = {
   DB: D1Database;
   AI: Ai;
   REPO_INTEL_AGENT: DurableObjectNamespace;
-  WORKER_API_KEY: WorkerAPIKeyBinding;
+  WORKER_API_KEY: string;
   AI_GATEWAY_TOKEN?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
   ASSETS: Fetcher;

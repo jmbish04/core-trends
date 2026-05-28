@@ -66,6 +66,7 @@ export default function RepositoryDetailView({ repositoryId }: RepositoryDetailV
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
 
   useEffect(() => {
     fetchRepositoryDetails();
@@ -91,7 +92,10 @@ export default function RepositoryDetailView({ repositoryId }: RepositoryDetailV
   };
 
   const triggerEvaluation = async () => {
+    if (isEvaluating) return;
+
     try {
+      setIsEvaluating(true);
       const response = await fetch(`/api/repositories/${repositoryId}/evaluate`, {
         method: "POST",
       });
@@ -99,10 +103,16 @@ export default function RepositoryDetailView({ repositoryId }: RepositoryDetailV
 
       if (data.success) {
         // Refresh data after evaluation
-        setTimeout(fetchRepositoryDetails, 2000);
+        setTimeout(() => {
+          fetchRepositoryDetails();
+          setIsEvaluating(false);
+        }, 2000);
+      } else {
+        setIsEvaluating(false);
       }
     } catch (err) {
       console.error("Evaluation error:", err);
+      setIsEvaluating(false);
     }
   };
 
@@ -271,8 +281,8 @@ export default function RepositoryDetailView({ repositoryId }: RepositoryDetailV
                   </pre>
                 </div>
               )}
-              <Button onClick={triggerEvaluation} variant="outline" className="w-full">
-                Re-evaluate Repository
+              <Button onClick={triggerEvaluation} variant="outline" className="w-full" disabled={isEvaluating}>
+                {isEvaluating ? "Evaluating..." : "Re-evaluate Repository"}
               </Button>
             </CardContent>
           </Card>
@@ -284,9 +294,9 @@ export default function RepositoryDetailView({ repositoryId }: RepositoryDetailV
             <CardDescription>This repository hasn't been evaluated by the AI yet</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={triggerEvaluation}>
+            <Button onClick={triggerEvaluation} disabled={isEvaluating}>
               <TrendingUpIcon className="mr-2 h-4 w-4" />
-              Trigger AI Evaluation
+              {isEvaluating ? "Evaluating..." : "Trigger AI Evaluation"}
             </Button>
           </CardContent>
         </Card>
