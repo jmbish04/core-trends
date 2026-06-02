@@ -7,8 +7,6 @@
  */
 
 import { AIChatAgent } from "@cloudflare/ai-chat";
-import { createWorkersAI } from "workers-ai-provider";
-import { streamText } from "ai";
 import type { Bindings } from "../api/index";
 
 export interface RepoIntelState {
@@ -30,8 +28,6 @@ export class RepositoryIntelligenceAgent extends AIChatAgent<Bindings, RepoIntel
    * Handle incoming chat messages with AI-powered repository analysis
    */
   async onChatMessage(finish?: any) {
-    const aiProvider = createWorkersAI({ binding: this.env.AI });
-
     // System prompt for repository evaluation context
     const systemPrompt = `You are the Monolith Repository Intelligence Architect.
 
@@ -52,23 +48,42 @@ When evaluating repositories, consider:
 Provide scores from 1-10 with clear rationale.`;
 
     try {
-      const result = await streamText({
-        model: aiProvider("@cf/meta/llama-3.1-8b-instruct"),
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...this.messages.map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-        ],
-        onFinish: async (event) => {
-          // Mirror evaluation data to D1 using ctx.waitUntil() for non-blocking persistence
-          this.ctx.waitUntil(this.mirrorEvaluationToD1(event.text));
-          if (finish) await finish(event);
-        },
-      });
+      const messages = [
+        { role: "system" as const, content: systemPrompt },
+        ...this.messages.map((msg) => ({
+          role: msg.role as "user" | "assistant",
+          content: typeof msg.content === "string" ? msg.content : JSON.stringify(msg.content),
+        })),
+      ];
 
-      return result.toDataStreamResponse();
+      const result = await this.env.AI.run(
+        "@cf/meta/llama-3.1-8b-instruct",
+        { messages, stream: true }
+      );
+
+      // Collect the streamed response for mirroring to D1
+      const response = result as ReadableStream;
+      const [mirrorStream, responseStream] = response.tee();
+
+      // Mirror evaluation data to D1 using ctx.waitUntil() for non-blocking persistence
+      this.ctx.waitUntil(
+        (async () => {
+          const reader = mirrorStream.getReader();
+          const decoder = new TextDecoder();
+          let fullText = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            fullText += decoder.decode(value, { stream: true });
+          }
+          await this.mirrorEvaluationToD1(fullText);
+          if (finish) await finish({ text: fullText });
+        })()
+      );
+
+      return new Response(responseStream, {
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      });
     } catch (error) {
       console.error("AI streaming error:", error);
       throw error;
