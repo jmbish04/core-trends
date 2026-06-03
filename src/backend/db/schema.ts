@@ -2,42 +2,14 @@
  * @fileoverview Database schema definitions using drizzle-orm.
  *
  * This file defines the database schema using drizzle-orm for the complete application.
- * It includes tables for authentication, dashboard metrics, AI threads, and system health.
+ * Single-user system - authentication via WORKER_API_KEY only.
  */
 
 import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
-/**
- * Users table for authentication
- */
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  name: text("name").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-});
-
-/**
- * Sessions table for managing user sessions
- */
-export const sessions = sqliteTable("sessions", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  token: text("token").notNull().unique(),
-  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`(unixepoch())`),
-});
+// Authentication removed - using WORKER_API_KEY for API authentication
+// Single user system - no per-user tables needed
 
 /**
  * Dashboard metrics table
@@ -58,9 +30,6 @@ export const dashboardMetrics = sqliteTable("dashboard_metrics", {
  */
 export const threads = sqliteTable("threads", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
@@ -105,9 +74,6 @@ export const healthChecks = sqliteTable("health_checks", {
  */
 export const notifications = sqliteTable("notifications", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
   type: text("type").notNull(), // 'info', 'warning', 'error', 'success'
   title: text("title").notNull(),
   message: text("message").notNull(),
@@ -122,9 +88,6 @@ export const notifications = sqliteTable("notifications", {
  */
 export const documents = sqliteTable("documents", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   content: text("content").notNull(), // JSON string of Slate nodes
   createdAt: integer("created_at", { mode: "timestamp" })
@@ -165,13 +128,10 @@ export const repositories = sqliteTable("repositories", {
 });
 
 /**
- * User goals for repository discovery
+ * Goals for repository discovery
  */
 export const goals = sqliteTable("goals", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description").notNull(),
   targetKeywords: text("target_keywords", { mode: "json" }).$type<string[]>().notNull(),
@@ -209,9 +169,6 @@ export const evaluations = sqliteTable("evaluations", {
  */
 export const projects = sqliteTable("projects", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
   generatedRepoUrl: text("generated_repo_url"),
@@ -228,10 +185,27 @@ export const projects = sqliteTable("projects", {
 export const systemLogs = sqliteTable("system_logs", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   level: text("level").notNull(), // 'info' | 'warn' | 'error'
-  subsystem: text("subsystem").notNull(), // 'webhook_listener' | 'agent_evaluator' | 'frontend'
+  subsystem: text("subsystem").notNull(), // 'webhook_listener' | 'agent_evaluator' | 'frontend' | 'github_action'
   message: text("message").notNull(),
   metadata: text("metadata"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
+});
+
+/**
+ * Pipeline runs from GitHub Actions
+ * Stores data sent from the repository intelligence pipeline
+ */
+export const pipelineRuns = sqliteTable("pipeline_runs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  runId: text("run_id").notNull(), // GitHub Actions run ID
+  status: text("status").notNull(), // 'success' | 'failure' | 'running'
+  repositoriesProcessed: integer("repositories_processed").notNull().default(0),
+  originalPayload: text("original_payload"), // JSON string of original GitHub API response
+  enrichedData: text("enriched_data"), // JSON string of AI-enriched analysis
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  completedAt: integer("completed_at", { mode: "timestamp" }),
 });

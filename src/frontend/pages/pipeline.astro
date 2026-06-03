@@ -1,0 +1,11 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PipelineRunsView from "@/components/PipelineRunsView";
+---
+
+<BaseLayout
+  title="Pipeline Runs - Repository Intelligence"
+  description="View GitHub Actions pipeline runs and AI enrichment results"
+>
+  <PipelineRunsView client:load />
+</BaseLayout>

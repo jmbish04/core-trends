@@ -8,7 +8,6 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import type { D1Database, Ai, DurableObjectNamespace } from '@cloudflare/workers-types';
-import { authRouter } from './routes/auth';
 import { dashboardRouter } from './routes/dashboard';
 import { threadsRouter } from './routes/threads';
 import { healthRouter } from './routes/health';
@@ -18,6 +17,7 @@ import { documentsRouter } from './routes/documents';
 import { openapiRouter } from './routes/openapi';
 import { webhooksRouter } from './routes/webhooks';
 import { repositoriesRouter } from './routes/repositories';
+import { pipelineRouter } from './routes/pipeline';
 
 export type Bindings = {
   DB: D1Database;
@@ -29,14 +29,7 @@ export type Bindings = {
   ASSETS: Fetcher;
 };
 
-export type Variables = {
-  userId?: number;
-  user?: {
-    id: number;
-    email: string;
-    name: string;
-  };
-};
+export type Variables = Record<string, never>;
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -47,8 +40,7 @@ app.use('*', logger());
 // Health check
 app.get('/api/ping', (c) => c.json({ status: 'ok', timestamp: Date.now() }));
 
-// Mount routers
-app.route('/api/auth', authRouter);
+// Mount routers (removed auth router - using API key only)
 app.route('/api/dashboard', dashboardRouter);
 app.route('/api/threads', threadsRouter);
 app.route('/api/health', healthRouter);
@@ -57,6 +49,7 @@ app.route('/api/ai', aiRouter);
 app.route('/api/documents', documentsRouter);
 app.route('/api/webhooks', webhooksRouter);
 app.route('/api/repositories', repositoriesRouter);
+app.route('/api/pipeline', pipelineRouter);
 app.route('/', openapiRouter);
 
 export { app };

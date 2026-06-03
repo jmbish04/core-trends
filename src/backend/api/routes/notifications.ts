@@ -17,32 +17,25 @@ notificationsRouter.use('*', authMiddleware);
 // GET /api/notifications
 notificationsRouter.get('/', async (c) => {
   const db = drizzle(c.env.DB);
-  const userId = c.get('userId')!;
   const unreadOnly = c.req.query('unreadOnly') === 'true';
 
   try {
     let query = db
       .select()
-      .from(notifications)
-      .where(eq(notifications.userId, userId));
+      .from(notifications);
 
     if (unreadOnly) {
-      query = query.where(
-        and(
-          eq(notifications.userId, userId),
-          eq(notifications.isRead, false)
-        )
-      );
+      query = query.where(eq(notifications.isRead, false));
     }
 
-    const userNotifications = await query
+    const allNotifications = await query
       .orderBy(desc(notifications.createdAt))
       .limit(100);
 
-    const unreadCount = userNotifications.filter((n) => !n.isRead).length;
+    const unreadCount = allNotifications.filter((n) => !n.isRead).length;
 
     return c.json({
-      notifications: userNotifications,
+      notifications: allNotifications,
       unreadCount,
     });
   } catch (error) {
@@ -54,18 +47,17 @@ notificationsRouter.get('/', async (c) => {
 // PUT /api/notifications/:id/read
 notificationsRouter.put('/:id/read', async (c) => {
   const db = drizzle(c.env.DB);
-  const userId = c.get('userId')!;
   const notificationId = parseInt(c.req.param('id'));
 
   try {
-    // Verify ownership
+    // Verify notification exists
     const notif = await db
       .select()
       .from(notifications)
       .where(eq(notifications.id, notificationId))
       .limit(1);
 
-    if (notif.length === 0 || notif[0].userId !== userId) {
+    if (notif.length === 0) {
       return c.json({ error: 'Notification not found' }, 404);
     }
 

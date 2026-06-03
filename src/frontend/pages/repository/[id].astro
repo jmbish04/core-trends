@@ -1,0 +1,13 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import RepositoryDetailView from "@/components/RepositoryDetailView";
+
+const { id } = Astro.params;
+---
+
+<BaseLayout
+  title="Repository Details - Core Trends"
+  description="Detailed AI analysis of repository"
+>
+  <RepositoryDetailView client:only="react" repositoryId={id} />
+</BaseLayout>
