@@ -21,7 +21,15 @@ import { pipelineRouter } from './routes/pipeline';
 
 export type Bindings = {
   DB: D1Database;
-  AI: Ai;
+  /**
+   * core-guardian RPC door — EVERY inference this Worker makes.
+   *
+   * There is deliberately no `AI` binding. `env.AI.run()` is account-implicit:
+   * it always lands on the paid Cloudflare account and cannot be metered per
+   * Worker, so spend through it is unattributable after the fact. Removing the
+   * binding is what makes the door the only way out.
+   */
+  GUARDIAN: Service;
   REPO_INTEL_AGENT: DurableObjectNamespace;
   WORKER_API_KEY: string;
   AI_GATEWAY_TOKEN?: string;
