@@ -54,9 +54,19 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "core-template-cfw-assets-astro-shadcn",
-      "database_id": "d126139f-6f57-49d2-bbc4-d20bbd46bbf4",
-      "preview_database_id": "d126139f-6f57-49d2-bbc4-d20bbd46bbf4",
+      // core-trends' OWN database, created 2026-09-26.
+      //
+      // It previously pointed at database_id d126139f… (dead — no such database
+      // on the account, which is why every deploy failed) under the name
+      // "core-template-cfw-assets-astro-shadcn", inherited from the template this
+      // repo was scaffolded from. That NAME resolves to d555f8ce…, which is
+      // core-guardian's live database holding ai_router_requests — and this
+      // repo's deploy runs `wrangler d1 migrations apply DB --remote`. Pointing
+      // the id at the name would have run core-trends' migrations over
+      // core-guardian's spend ledger.
+      "database_name": "core-trends",
+      "database_id": "8f64ac2f-df5a-4751-858e-25322d79a08e",
+      "preview_database_id": "8f64ac2f-df5a-4751-858e-25322d79a08e",
       "migrations_dir": "drizzle",
     },
   ],
