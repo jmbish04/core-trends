@@ -8,6 +8,7 @@
 
 import { AIChatAgent } from "@cloudflare/ai-chat";
 import type { Bindings } from "../api/index";
+import { GUARDIAN_PROJECT, guardianBody, guardianRun, isStream } from "../lib/guardian";
 
 export interface RepoIntelState {
   lastEvaluationId?: number;
@@ -56,13 +57,30 @@ Provide scores from 1-10 with clear rationale.`;
         })),
       ];
 
-      const result = await this.env.AI.run(
-        "@cf/meta/llama-3.1-8b-instruct",
-        { messages, stream: true }
-      );
+      // Routed through core-guardian rather than `env.AI.run` so the spend is
+      // attributed to this Worker and guardian can serve the call from a
+      // flat-rate Ollama subscription instead of metered neurons.
+      // See src/backend/lib/guardian.ts.
+      const result = await guardianRun(this.env, {
+        project: GUARDIAN_PROJECT,
+        importance: "low",
+        task: "chat",
+        model: "cheapest",
+        input: { messages },
+        stream: true,
+      });
+
+      // A budget cap, open circuit breaker or "no model in budget" comes back as
+      // a JSON envelope even when a stream was requested. `guardianBody` turns
+      // that into a throw, so it lands in the catch below instead of becoming an
+      // empty stream the caller would read as a silent, successful answer.
+      if (!isStream(result)) {
+        guardianBody(result);
+        throw new Error("core-guardian returned no stream for a streaming request.");
+      }
 
       // Collect the streamed response for mirroring to D1
-      const response = result as ReadableStream;
+      const response = result.stream.body as ReadableStream;
       const [mirrorStream, responseStream] = response.tee();
 
       // Mirror evaluation data to D1 using ctx.waitUntil() for non-blocking persistence

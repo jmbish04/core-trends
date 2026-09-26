@@ -27,9 +27,24 @@
     "run_worker_first": true,
     "not_found_handling": "none",
   },
+  // Speech-to-text and text-to-speech ONLY. Every text/embedding call goes
+  // through the GUARDIAN service binding below (src/backend/lib/guardian.ts).
+  // This binding survives only because guardian's door is JSON-only and has
+  // no binary contract yet — `guardian-tts-epic` in Colby Maestro. Do not add
+  // new env.AI.run() call sites; removing this binding is the goal.
   "ai": {
     "binding": "AI",
   },
+  // core-guardian RPC door: attribution, cost-ranked routing, budget caps,
+  // circuit breakers and the daily neuron ceiling. The service binding is
+  // the trust boundary, so no credential is needed.
+  "services": [
+    {
+      "binding": "GUARDIAN",
+      "service": "core-guardian",
+      "entrypoint": "GuardianRpc",
+    },
+  ],
   "durable_objects": {
     "bindings": [
       {
