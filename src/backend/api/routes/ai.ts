@@ -4,11 +4,14 @@
  * Text inference goes through core-guardian's RPC door (`src/backend/lib/guardian.ts`),
  * never `env.AI.run()` — see that file for why.
  *
- * Speech-to-text and text-to-speech still use the binding, because guardian's
- * door is JSON-only today and has no binary contract. That work is tracked as
- * `guardian-tts-epic` / `guardian-tts-t1-contract` in Colby Maestro. Until it
- * lands, this Worker keeps its `ai` binding and those two routes stay
- * unattributed. Do NOT add new `env.AI.run()` call sites here.
+ * Every route here — including speech-to-text and text-to-speech — goes through
+ * the door. The `ai` binding is gone from this Worker entirely, which is the
+ * point: an `env.AI.run()` call is account-implicit and cannot be attributed to
+ * the Worker that made it, so the only reliable fix is to remove the binding.
+ *
+ * Text-to-speech needed core-guardian's binary passthrough (jmbish04/core-guardian#140)
+ * because aura-1 answers with `audio/mpeg`. Speech-to-text never did — whisper
+ * takes JSON in and returns JSON out; it was migratable all along.
  */
 
 import { Hono } from 'hono';
@@ -121,13 +124,19 @@ aiRouter.post('/speech-to-text', zValidator('json', speechToTextSchema), async (
     // Decode base64 audio
     const audioBuffer = Uint8Array.from(atob(audio), (c) => c.charCodeAt(0));
 
-    // ponytail: still on the binding — guardian's door is JSON-only and has no
-    // binary contract yet (guardian-tts-epic). Move this the day it ships.
-    const response = await c.env.AI.run('@cf/openai/whisper', {
-      audio: Array.from(audioBuffer),
+    // Whisper takes JSON and returns JSON ({ text }), so this is an ordinary
+    // door call. Model is pinned: transcription has no cheaper equivalent in
+    // the catalog, and `isChatModel` excludes speech models from routing anyway.
+    const result = await guardianRun(c.env, {
+      project: GUARDIAN_PROJECT,
+      importance: 'low',
+      task: 'transcribe',
+      model: '@cf/openai/whisper',
+      provider: 'workers-ai',
+      input: { audio: Array.from(audioBuffer) },
     });
 
-    return c.json(response);
+    return c.json(guardianBody(result) as Record<string, unknown>);
   } catch (error) {
     console.error('Speech-to-text error:', error);
     return c.json({ error: 'Speech-to-text failed' }, 500);
@@ -139,13 +148,30 @@ aiRouter.post('/text-to-speech', zValidator('json', textToSpeechSchema), async (
   const { text, voice = 'alloy' } = c.req.valid('json');
 
   try {
-    // ponytail: still on the binding — see speech-to-text above (guardian-tts-epic).
-    const response = await c.env.AI.run('@cf/deepgram/aura-1', {
-      text,
-      voice,
+    // aura-1 answers with `audio/mpeg`. core-guardian returns that as a Response
+    // on the `stream` member (its binary passthrough), having already metered the
+    // neurons from the `cf-ai-neurons` header.
+    const result = await guardianRun(c.env, {
+      project: GUARDIAN_PROJECT,
+      importance: 'low',
+      task: 'speak',
+      model: '@cf/deepgram/aura-1',
+      provider: 'workers-ai',
+      input: { text, voice },
     });
 
-    // Return audio as base64
+    // A refusal (budget, breaker, no free neurons) comes back as JSON even here.
+    // `guardianBody` turns a non-2xx into a throw so it cannot be mistaken for
+    // silence from the model.
+    if (!isStream(result)) {
+      guardianBody(result);
+      return c.json({ error: 'Text-to-speech failed' }, 500);
+    }
+
+    // ponytail: still base64 — this route's response shape is public and
+    // callers parse `{ audio }`. Changing it to a raw audio body is a breaking
+    // change, not a cleanup.
+    const response = result.stream.body;
     if (response instanceof ReadableStream) {
       const reader = response.getReader();
       const chunks: Uint8Array[] = [];
@@ -168,7 +194,7 @@ aiRouter.post('/text-to-speech', zValidator('json', textToSpeechSchema), async (
       return c.json({ audio: base64Audio });
     }
 
-    return c.json(response);
+    return c.json({ error: 'Text-to-speech returned no audio' }, 502);
   } catch (error) {
     console.error('Text-to-speech error:', error);
     return c.json({ error: 'Text-to-speech failed' }, 500);

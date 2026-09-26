@@ -22,15 +22,13 @@ import { pipelineRouter } from './routes/pipeline';
 export type Bindings = {
   DB: D1Database;
   /**
-   * Workers AI binding — speech-to-text and text-to-speech ONLY.
+   * core-guardian RPC door — EVERY inference this Worker makes.
    *
-   * Every text/embedding call goes through `GUARDIAN` instead; see
-   * `src/backend/lib/guardian.ts`. This binding survives only because
-   * guardian's door is JSON-only and has no binary contract yet
-   * (`guardian-tts-epic` in Colby Maestro). Removing it is the goal.
+   * There is deliberately no `AI` binding. `env.AI.run()` is account-implicit:
+   * it always lands on the paid Cloudflare account and cannot be metered per
+   * Worker, so spend through it is unattributable after the fact. Removing the
+   * binding is what makes the door the only way out.
    */
-  AI: Ai;
-  /** core-guardian RPC door — every text and embedding inference. */
   GUARDIAN: Service;
   REPO_INTEL_AGENT: DurableObjectNamespace;
   WORKER_API_KEY: string;

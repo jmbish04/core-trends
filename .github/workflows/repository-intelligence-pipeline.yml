@@ -1,9 +1,17 @@
 name: "Monolith: Repository Intelligence Pipeline"
 
+# PERMANENTLY PAUSED — core-trends does not process anything automatically.
+#
+# The daily schedule was removed on 2026-09-26 by owner decision. This pipeline
+# ingests 50 trending repositories and runs AI analysis over them; left on a
+# timer it spends neurons every night whether or not anyone is reading the
+# output. It is now manual-only: run it from the Actions tab when you actually
+# want a sweep.
+#
+# Do NOT restore `schedule:` without asking Justin. Re-enabling it is a spend
+# decision, not a maintenance one.
 on:
-  schedule:
-    - cron: "0 0 * * *"  # Run daily at midnight UTC
-  workflow_dispatch:      # Allow manual triggers
+  workflow_dispatch:      # manual only — see the note above
 
 jobs:
   ingest-trending-repositories:
